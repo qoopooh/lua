@@ -18,7 +18,7 @@ local function get_connection()
     local user = os.getenv("SDDB_USER") or "root"
     local password = os.getenv("SDDB_PASS") or "123456"
     local database = os.getenv("SDDB_BABEL") or "babel"
-    local hostname = os.getenv("SDDB_HOST") or "sdv2prdsql02.simdif.local"
+    local hostname = "sdv2prdsql02.simdif.local"
 
     return env:connect(database, user, password, hostname)
 end -- get_connection
