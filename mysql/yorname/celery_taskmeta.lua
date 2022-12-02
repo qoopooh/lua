@@ -1,8 +1,8 @@
 #!/usr/bin/env lua
--- Replace text for tp_key
+-- Delete celery tasks results from database
 --
--- e.g. ./replace.lua grp_yorname__pnl_qiwi__payment_summary_title
---      -p '%%__amount%% บาท' -r 'RUB %%__amount%%'
+-- SDDB_HOST=sdv2prdsql02.simdif.local ./celery_taskmeta.lua -d 2022-12-01 -D
+--
 
 local argparse = require "argparse"
 local sddb = require "sddb"
@@ -36,10 +36,7 @@ WHERE date_done < '%s';]], date)
     if delete and row.count ~= "0" then
         sql = string.format([[DELETE FROM celery_taskmeta
 WHERE date_done < '%s']], date)
-        result, err = conn:execute(sql)
-        if err then
-            print(err)
-        end
+        local result = conn:execute(sql)
         print("Deleted " .. result)
         cursor:close()
     end
