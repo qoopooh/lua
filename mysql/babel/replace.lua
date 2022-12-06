@@ -92,6 +92,23 @@ local function replace_text_table(conn, text_id, pattern, repl)
 end -- replace_text_table
 
 --
+-- Array to query string e.g. "'xx', 'xx'"
+--
+local function codesToString(arr)
+    local msg = nil
+
+    for _, code in ipairs(arr) do
+        if msg then
+            msg = msg .. ", '" .. code .. "'"
+        else
+            msg = "'" .. code .. "'"
+        end
+    end
+
+    return msg
+end -- codesToString
+
+--
 -- Search / Replace in entry table
 --
 local function entry_table(conn, text_id, pattern, repl)
@@ -111,48 +128,90 @@ AND approve_id IS NOT NULL
     local row = cursor:fetch ({}, "a")
     local results = {}
     local approved_languages = {}
+    local patt_count = 0
     while row do
 
-        local patt_count = 0
         if row.entry then
             for _ in string.gfind(row.entry, pattern) do
                 patt_count = patt_count + 1
             end
         end
-        row = cursor:fetch(row, "a")
-        table.insert(results, row)
+
+        table.insert(results, {
+            id = row.id,
+            entry = row.entry,
+            code = row.code,
+        })
         table.insert(approved_languages, row.code)
+        --print(row.code)
+
+        row = cursor:fetch(row, "a")
     end
     cursor:close()
 
     -- Non approved languages
-    --sql = string.format([[SELECT entry.id, entry, language.code
---FROM entry, language
---WHERE entry.text_id = %s
---AND entry.language_id = language.id
---AND language.code NOT IN (%s)
---]], text_id)
-    --cursor, err = conn:execute(sql)
+    sql = string.format([[SELECT entry.id, entry, language.code
+FROM entry, language
+WHERE entry.text_id = %s
+AND entry.language_id = language.id
+AND language.code NOT IN (%s)
+]], text_id, codesToString(approved_languages))
+    --print(sql)
 
-        if repl then
-            print(repl)
-            --if patt_count > 0 then
-                --local text = row.entry:gsub(pattern, repl)
-                --msg = msg .. string.format([[UPDATE entry SET entry = '%s'
---WHERE id = %s;
---]], text, row.id)
-            --end
-        --else
-            --if patt_count == 0 then
-                --msg = msg .. string.format("%s: %s\n",
-                                           --row.code, patt_count)
-                --if row.entry then
-                    --msg = msg .. string.format("  (%s)\n", row.entry)
-                --end
-            --else
-                --msg = msg .. string.format("%s: %s\n", row.code, patt_count)
-            --end
+    cursor = conn:execute(sql)
+    row = cursor:fetch ({}, "a")
+    local duplicated_languages = {}
+    while row do
+        local found = false
+
+        for _, code in ipairs(duplicated_languages) do
+            if code == row.code then
+                found = true
+                break
+            end
         end
+
+        if not found then
+
+            if row.entry then
+                for _ in string.gfind(row.entry, pattern) do
+                    patt_count = patt_count + 1
+                end
+            end
+
+            table.insert(results, {
+                id = row.id,
+                entry = row.entry,
+                code = row.code,
+            })
+            table.insert(duplicated_languages, row.code)
+            --print(row.code)
+        end
+
+        row = cursor:fetch(row, "a")
+    end
+    cursor:close()
+
+    for _, row in ipairs(results) do
+        if repl then
+            if patt_count > 0 then
+                local text = row.entry:gsub(pattern, repl)
+                msg = msg .. string.format([[UPDATE entry SET entry = '%s'
+WHERE id = %s;
+]], text, row.id)
+            end
+        else
+            if patt_count == 0 then
+                msg = msg .. string.format("%s: %s\n",
+                                           row.code, patt_count)
+                if row.entry then
+                    msg = msg .. string.format("  (%s)\n", row.entry)
+                end
+            else
+                msg = msg .. string.format("%s: %s\n", row.code, patt_count)
+            end
+        end
+    end
 
     return msg
 end -- entry_table
