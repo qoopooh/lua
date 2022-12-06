@@ -91,9 +91,11 @@ local function replace_text_table(conn, text_id, pattern, repl)
                          text, text_id)
 end -- replace_text_table
 
+--
+-- Search / Replace in entry table
+--
 local function entry_table(conn, text_id, pattern, repl)
-    local sql = string.format([[SELECT entry.id, entry, approve_id, language_id,
-language.code, validate_count
+    local sql = string.format([[SELECT entry.id, entry, language.code
 FROM entry, language
 WHERE entry.text_id = %s
 AND entry.language_id = language.id
@@ -107,7 +109,8 @@ AND approve_id IS NOT NULL
 
     local msg = ''
     local row = cursor:fetch ({}, "a")
-    local count = 1
+    local results = {}
+    local approved_languages = {}
     while row do
 
         local patt_count = 0
@@ -116,29 +119,40 @@ AND approve_id IS NOT NULL
                 patt_count = patt_count + 1
             end
         end
+        row = cursor:fetch(row, "a")
+        table.insert(results, row)
+        table.insert(approved_languages, row.code)
+    end
+    cursor:close()
+
+    -- Non approved languages
+    --sql = string.format([[SELECT entry.id, entry, language.code
+--FROM entry, language
+--WHERE entry.text_id = %s
+--AND entry.language_id = language.id
+--AND language.code NOT IN (%s)
+--]], text_id)
+    --cursor, err = conn:execute(sql)
 
         if repl then
-            if patt_count > 0 then
-                local text = row.entry:gsub(pattern, repl)
-                msg = msg .. string.format([[UPDATE entry SET entry = '%s'
-WHERE id = %s;
-]], text, row.id)
-            end
-        else
-            if patt_count == 0 then
-                msg = msg .. string.format("%s: %s\n",
-                                           row.code, patt_count)
-                if row.entry then
-                    msg = msg .. string.format("  (%s)\n", row.entry)
-                end
-            else
-                msg = msg .. string.format("%s: %s\n", row.code, patt_count)
-            end
+            print(repl)
+            --if patt_count > 0 then
+                --local text = row.entry:gsub(pattern, repl)
+                --msg = msg .. string.format([[UPDATE entry SET entry = '%s'
+--WHERE id = %s;
+--]], text, row.id)
+            --end
+        --else
+            --if patt_count == 0 then
+                --msg = msg .. string.format("%s: %s\n",
+                                           --row.code, patt_count)
+                --if row.entry then
+                    --msg = msg .. string.format("  (%s)\n", row.entry)
+                --end
+            --else
+                --msg = msg .. string.format("%s: %s\n", row.code, patt_count)
+            --end
         end
-
-        row = cursor:fetch(row, "a")
-        count = count + 1
-    end
 
     return msg
 end -- entry_table
