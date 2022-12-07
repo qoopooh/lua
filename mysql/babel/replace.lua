@@ -9,6 +9,7 @@ local parser = argparse("Text replace", "for Babel tp_key")
 parser:argument("tp_key", "babel key (tp_key)")
 parser:option("-p --pattern", "Search pattern")
 parser:option("-r --repl", "Replaced pattern")
+parser:flag("-v --verbose", "Print more data")
 
 
 local function get_connection()
@@ -111,7 +112,7 @@ end -- codesToString
 --
 -- Search / Replace in entry table
 --
-local function entry_table(conn, text_id, pattern, repl)
+local function entry_table(conn, text_id, pattern, repl, verbose)
     local sql = string.format([[SELECT entry.id, entry, language.code
 FROM entry, language
 WHERE entry.text_id = %s
@@ -128,12 +129,16 @@ AND approve_id IS NOT NULL
     local row = cursor:fetch ({}, "a")
     local results = {}
     local approved_languages = {}
-    local patt_count = 0
+    local patt_count = {}
     while row do
 
         if row.entry then
             for _ in string.gfind(row.entry, pattern) do
-                patt_count = patt_count + 1
+                if patt_count[row.code] then
+                    patt_count[row.code] = patt_count[row.code] + 1
+                else
+                    patt_count[row.code] = 1
+                end
             end
         end
 
@@ -143,7 +148,6 @@ AND approve_id IS NOT NULL
             code = row.code,
         })
         table.insert(approved_languages, row.code)
-        --print(row.code)
 
         row = cursor:fetch(row, "a")
     end
@@ -175,7 +179,11 @@ AND language.code NOT IN (%s)
 
             if row.entry then
                 for _ in string.gfind(row.entry, pattern) do
-                    patt_count = patt_count + 1
+                    if patt_count[row.code] then
+                        patt_count[row.code] = patt_count[row.code] + 1
+                    else
+                        patt_count[row.code] = 1
+                    end
                 end
             end
 
@@ -192,23 +200,22 @@ AND language.code NOT IN (%s)
     end
     cursor:close()
 
-    for _, row in ipairs(results) do
+    for _, obj in ipairs(results) do
         if repl then
-            if patt_count > 0 then
-                local text = row.entry:gsub(pattern, repl)
+            if patt_count[obj.code] and patt_count[obj.code] > 0 then
+                local text = obj.entry:gsub(pattern, repl)
                 msg = msg .. string.format([[UPDATE entry SET entry = '%s'
 WHERE id = %s;
-]], text, row.id)
+]], text, obj.id)
             end
         else
-            if patt_count == 0 then
-                msg = msg .. string.format("%s: %s\n",
-                                           row.code, patt_count)
-                if row.entry then
-                    msg = msg .. string.format("  (%s)\n", row.entry)
+            if not patt_count[obj.code] or patt_count[obj.code] == 0 then
+                msg = msg .. string.format("%s: 0\n", obj.code)
+                if verbose and obj.entry then
+                    msg = msg .. string.format("  (%s)\n", obj.entry)
                 end
             else
-                msg = msg .. string.format("%s: %s\n", row.code, patt_count)
+                msg = msg .. string.format("%s: %s\n", obj.code, patt_count[obj.code])
             end
         end
     end
@@ -216,7 +223,7 @@ WHERE id = %s;
     return msg
 end -- entry_table
 
-local function replace(tp_key, pattern, repl)
+local function replace(tp_key, pattern, repl, verbose)
     local conn = assert(get_connection())
 
     local text_id = get_text_id(conn, tp_key)
@@ -228,7 +235,7 @@ local function replace(tp_key, pattern, repl)
     if not repl then
         local text = search_text_table(conn, text_id, pattern)
         print(text)
-        local entries = entry_table(conn, text_id, pattern)
+        local entries = entry_table(conn, text_id, pattern, nil, verbose)
         print(entries)
         os.exit()
     end
@@ -236,10 +243,10 @@ local function replace(tp_key, pattern, repl)
     local sql = replace_text_table(conn, text_id, pattern, repl)
     print(sql)
 
-    sql = entry_table(conn, text_id, pattern, repl)
+    sql = entry_table(conn, text_id, pattern, repl, verbose)
     print(sql)
 end -- replace
 
 
 local args = parser:parse()
-replace(args.tp_key, args.pattern, args.repl)
+replace(args.tp_key, args.pattern, args.repl, args.verbose)
