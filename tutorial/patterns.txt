@@ -1,0 +1,20 @@
+-- https://www.lua.org/pil/20.2.html
+
+.	all characters
+%a	letters
+%c	control characters
+%d	digits
+%l	lower case letters
+%p	punctuation characters
+%s	space characters
+%u	upper case letters
+%w	alphanumeric characters
+%x	hexadecimal digits
+%z	the character with representation 0
+
+( ) . % + - * ? [ ^ $
+
++	1 or more repetitions
+*	0 or more repetitions
+-	also 0 or more repetitions
+?	optional (0 or 1 occurrence)
