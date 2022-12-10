@@ -56,7 +56,7 @@ local function search_text_table(conn, text_id, pattern)
     local text = row.text
     local count = 0
     local msg = "Found " .. pattern .. ": "
-    for w in string.gfind(text, pattern) do
+    for w in string.gmatch(text, pattern) do
         if count > 0 then
             msg = msg .. ", " .. w
         else
@@ -133,7 +133,7 @@ AND approve_id IS NOT NULL
     while row do
 
         if row.entry then
-            for _ in string.gfind(row.entry, pattern) do
+            for _ in string.gmatch(row.entry, pattern) do
                 if patt_count[row.code] then
                     patt_count[row.code] = patt_count[row.code] + 1
                 else
@@ -178,7 +178,7 @@ AND language.code NOT IN (%s)
         if not found then
 
             if row.entry then
-                for _ in string.gfind(row.entry, pattern) do
+                for _ in string.gmatch(row.entry, pattern) do
                     if patt_count[row.code] then
                         patt_count[row.code] = patt_count[row.code] + 1
                     else
