@@ -15,7 +15,7 @@ end -- trim
 
 local function loadReservedWords()
     local words = {}
-    local fp = io.open("reserved_words.txt", "r")
+    local fp = assert(io.open("reserved_words.txt", "r"))
     for w in string.gmatch(fp:read("*all"), "%w+") do
         words[w] = true
     end
