@@ -15,7 +15,6 @@ local function calculate(id)
 end -- calculate
 
 local function trim(s)
-   s = (s:gsub("^%s*(.-)%s*$", "%1"))
    return (s:gsub("%D", ""))
 end -- trim
 
@@ -23,6 +22,7 @@ local function load()
 
     local id = arg[1]
     if not id then
+        io.write("Please type your ID card number: ")
         id = io.read()
     end
 
@@ -37,8 +37,9 @@ local function load()
             print("OK")
             os.exit()
         end
+        print("FAILED")
     end
-    print(remainder)
+    print("Sum: " .. remainder)
 end -- load
 
 load()
