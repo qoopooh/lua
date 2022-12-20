@@ -21,7 +21,7 @@ end -- trim
 local function load()
 
     local id = arg[1]
-    if not id then
+    if not id or id:len() < 12 then
         io.write("Please type your ID card number: ")
         id = io.read()
     end
@@ -29,6 +29,7 @@ local function load()
     id = trim(id)
     if id:len() < 12 then
         print("Need Thai ID card number")
+        os.exit()
     end
 
     local remainder = calculate(id)
