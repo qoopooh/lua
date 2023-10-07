@@ -6,7 +6,7 @@ local function g (a, b, ...)
   print('b', b)
 
   print('arg.n', arg.n)
-  if arg.n > 0 then
+  if arg.n and arg.n > 0 then
     for i,v in ipairs(arg) do
       print('arg', i, v)
     end
