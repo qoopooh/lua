@@ -1,0 +1,14 @@
+# Set Up a Systemd Service
+[Unit]
+Description=Golang Application
+
+[Service]
+ExecStart=/home/berm/go/bin/ginh
+Restart=always
+#User=www-data
+#Group=www-data
+Environment=PORT=8081
+
+[Install]
+WantedBy=multi-user.target
+
