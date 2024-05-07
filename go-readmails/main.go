@@ -37,13 +37,13 @@ func main() {
 	}
 
 	// Get the last 10 messages
-	from := mbox.Messages - 2
+	from := mbox.Messages - 9
 	to := mbox.Messages
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
 
 	// Fetch the messages
-	messages := make(chan *imap.Message, 3)
+	messages := make(chan *imap.Message, 10)
 	go func() {
 		if err := c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchItem("BODY.PEEK[]")}, messages); err != nil {
 			log.Fatal(err)
@@ -78,11 +78,9 @@ func main() {
 					}
 
 					t, _, _ := p.Header.ContentType()
-					// log.Println("A part with type", t)
 
 					if t == "text/plain" {
 						if body, err := io.ReadAll(p.Body); err == nil {
-							// fmt.Println(string(body))
 							url := string(body)
 							out += "\n" + url + "\n" + redirect(url)
 						}
@@ -91,10 +89,6 @@ func main() {
 			} else {
 				t, _, _ := m.Header.ContentType()
 				log.Println("This is a non-multipart message with type", t)
-
-				// if body, err := io.ReadAll(m.Body); err == nil {
-				// 	fmt.Println(string(body))
-				// }
 			}
 		}
 
@@ -116,14 +110,14 @@ func redirect(url string) string {
 	// Make a GET request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Println("Error creating request:", err)
+		log.Println("GET Error:", err)
 		return ""
 	}
 
 	// Perform the request
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Error performing request:", err)
+		log.Println("Do Error:", err)
 		return ""
 	}
 	defer resp.Body.Close()
@@ -133,10 +127,10 @@ func redirect(url string) string {
 		// Get the redirected URL
 		redirectURL, err := resp.Location()
 		if err != nil {
-			log.Println("Error getting redirect URL:", err)
+			log.Println("Location Error:", err)
 			return ""
 		}
-		// log.Println("Redirect URL:", redirectURL)
+
 		return redirectURL.String()
 	} else {
 		if body, err := io.ReadAll(resp.Body); err == nil {
