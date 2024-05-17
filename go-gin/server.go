@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,13 @@ func getPort() string {
 func main() {
 	r := gin.Default()
 	r.GET("/", func(c *gin.Context) {
-		c.String(200, "Hello, Gin!")
+
+		queryParam := c.Query("q")
+		if queryParam == "" {
+			queryParam = "Gin"
+		}
+
+		c.String(http.StatusOK, "Hello, %s!", queryParam)
 	})
 	r.Run(":" + getPort())
 }
