@@ -1,0 +1,15 @@
+# sudo cp ginh.service /etc/systemd/system/ginh.service
+# sudo systemctl daemon-reload
+[Unit]
+Description=Golang Application
+
+[Service]
+ExecStart=/home/berm/go/bin/ginh
+Restart=always
+#User=www-data
+#Group=www-data
+Environment=PORT=8081
+
+[Install]
+WantedBy=multi-user.target
+
